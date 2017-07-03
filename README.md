@@ -11,6 +11,7 @@ run: use any python IDE to open the project dir, and run UI.py or directly open 
 
 
 其他：
+
 1）搜索支持搜索元素的class属性，text属性，resource-id属性，前两者只要包含属性包含搜索内容就会被搜索到，最后者需要完全匹配才会搜索到；
 
 2）获取完整的xpath路径：先选中某个节点，然后右键单击一次该节点，在右下方的面板中，就会显示出该节点的fullXPath
