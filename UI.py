@@ -9,6 +9,7 @@ from Helper.AutoCloseMessageBox import MessageDialog
 import wx.grid as GD
 from collections import OrderedDict
 from wx.lib.intctrl import IntCtrl as IntC
+from PIL import Image
 
 recordStatus = None
 recordTimeDelay = None
@@ -423,7 +424,7 @@ class RightTopPanel(scrolled.ScrolledPanel):
         del l[-1]
         l.reverse()
         for i in l:
-            xPath = self.tree.ordeDic[i]["class"]+"["+"@index="+self.tree.ordeDic[i]["index"]+"]"
+            xPath = self.tree.ordeDic[i]["class"]+"["+"@index="+"\'%s\'" % self.tree.ordeDic[i]["index"]+"]" 
             fxpath += "/"+xPath
     
         wx.CallAfter(pub.sendMessage, "updateXPath", msg=fxpath)
@@ -507,6 +508,7 @@ class MainPanel(wx.Panel):
         image_open_folder = wx.Image(os.path.join(self.imagesPath, "open-folder.png"), wx.BITMAP_TYPE_PNG).ConvertToBitmap()
         image_screenShot = wx.Image(os.path.join(self.imagesPath, "screenshot.png"), wx.BITMAP_TYPE_PNG).ConvertToBitmap()
         image_save = wx.Image(os.path.join(self.imagesPath, "save.png"), wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+        image_rotate = wx.Image(os.path.join(self.imagesPath, "rotate.png"), wx.BITMAP_TYPE_PNG).ConvertToBitmap()
         image_recorder = wx.Image(os.path.join(self.imagesPath, "recorder.jpg"), wx.BITMAP_TYPE_JPEG).ConvertToBitmap()
         image_exe = wx.Image(os.path.join(self.imagesPath, "go.png"), wx.BITMAP_TYPE_PNG).ConvertToBitmap()
         topSizer = wx.GridSizer(1, 5, 5, 5)
@@ -515,6 +517,8 @@ class MainPanel(wx.Panel):
         self.button_screenShot.SetToolTip("获取页面截图和布局文件")
         self.Bind(wx.EVT_BUTTON, self.updateScreenShot, self.button_screenShot)
         self.button_save = wx.BitmapButton(self, -1, image_save, size=(30,22))
+        self.button_rotate = wx.BitmapButton(self, -1, image_rotate, size=(30, 22))
+        self.Bind(wx.EVT_BUTTON, self.updateAfterRotate, self.button_rotate)
         self.exeButton = wx.BitmapButton(self, -1, image_exe, size=(30,22))
         self.exeButton.Bind(wx.EVT_BUTTON, self.tellToDoSwipeOrInput)
         self.exeButton.SetToolTip("执行动作")
@@ -577,6 +581,7 @@ class MainPanel(wx.Panel):
         b1.Add(self.button_open_folder, 1, wx.ALL, 1)
         b1.Add(self.button_screenShot, 1, wx.ALL, 1)
         b1.Add(self.button_save, 1, wx.ALL, 1)
+        b1.Add(self.button_rotate, 1, wx.ALL, 1)
         b2.Add(self.recordTimeOut, 1, wx.ALL, 1)
         b2.Add(self.button_recorder, 1, wx.ALL, 1)
         b2.Add(self.keyboardType, 1, wx.ALL, 1)
@@ -634,14 +639,20 @@ class MainPanel(wx.Panel):
                     dlg.Destroy()
             else:
                 wx.CallAfter(pub.sendMessage, "DoSwipeOrInput", msg ="滑动\n%d\n%d\n%d\n%d" % (sX,sY,eX,eY))
-        
-        
+
+    def updateAfterRotate(self,evt):
+        screenShotPath = os.path.join(os.getcwd(), "screenShot", "screenshot.png")
+        img = Image.open(screenShotPath)
+        out = img.rotate(90,expand=1)
+        out.save(screenShotPath)
+        wx.CallAfter(pub.sendMessage, "update", msg=screenShotPath)
+
     def onClickOpeartionOption(self, evt):
         print(self.OpeartionBox.GetStringSelection(),' is clicked from Radio Box')
         
     def tellToDoSearch(self,evt):
         searchContent = self.searchBox.GetValue()
-        wx.CallAfter(pub.sendMessage, "DoSearch", msg = searchContent)
+        wx.CallAfter(pub.sendMessage, "DoSearch", msg=searchContent)
         
     def updateScreenShot(self, evt):
         getNewScreenShotAndDomFileThread()
