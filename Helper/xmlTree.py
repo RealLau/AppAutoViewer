@@ -41,7 +41,7 @@ class XMLTree(wx.TreeCtrl):
 
     def LoadTree(self, filename):
         # Create a parser
-        #每次Load数据时，清空前一次的数据
+        # 每次Load数据时，清空前一次的数据
         self.DeleteAllItems()
         self._root = self.AddRoot("Root-No-Meaning")
         self.nodeStack = [self._root]

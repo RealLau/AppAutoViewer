@@ -1,5 +1,6 @@
 import wx
 
+
 class MessageDialog(wx.Dialog):
     def __init__(self, message, title):
         wx.Dialog.__init__(self, None, -1, title,size=(300, 120))
