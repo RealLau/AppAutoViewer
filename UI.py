@@ -225,25 +225,30 @@ class BottomLeftPanel(scrolled.ScrolledPanel):
                         1] - 20
                     GetNewScreenShotAndDomFileThread(current_fit_size)
                 else:
-                    c = msg.split("\n")[0]
-                    kT = msg.split("\n")[1]
-                    print("命令：输入,", "内容：", c)
-                    if c != '':
-                        if kT == "ADB":
-                            os.system("adb shell am broadcast -a ADB_INPUT_TEXT --es msg '%s'" % c)
-                        else:
-                            os.system("adb shell input text '%s'" % c)
+                    if check_adb_keyboard_installed() and set_current_input_method():
+                        c = msg.split("\n")[0]
+                        kT = msg.split("\n")[1]
+                        print("命令：输入,", "内容：", c)
+                        if c != '':
+                            if kT == "ADB":
+                                os.system("adb shell am broadcast -a ADB_INPUT_TEXT --es msg '%s'" % c)
+                            else:
+                                os.system("adb shell input text '%s'" % c)
 
-                        dlg = MessageDialog('等待新的页面加载完成(已设置延时%d秒)' % recordTimeDelay, '提示')
-                        wx.CallLater(recordTimeDelay * 1000, dlg.Destroy)
-                        dlg.ShowModal()
-                        current_panel_size = self.GetSize()
-                        current_status_bar_size = self.statusBar.GetSize()
-                        current_fit_size = current_panel_size[0] - 20, current_panel_size[1] - current_status_bar_size[
-                            1] - 20
-                        GetNewScreenShotAndDomFileThread(current_fit_size)
+                            dlg = MessageDialog('等待新的页面加载完成(已设置延时%d秒)' % recordTimeDelay, '提示')
+                            wx.CallLater(recordTimeDelay * 1000, dlg.Destroy)
+                            dlg.ShowModal()
+                            current_panel_size = self.GetSize()
+                            current_status_bar_size = self.statusBar.GetSize()
+                            current_fit_size = current_panel_size[0] - 20, current_panel_size[1] - current_status_bar_size[
+                                1] - 20
+                            GetNewScreenShotAndDomFileThread(current_fit_size)
+                        else:
+                            dlg = wx.MessageDialog(self, u"请检查输入内容", u"输入内容不能为空", wx.OK | wx.ICON_ERROR)
+                            if dlg.ShowModal() == wx.ID_OK:
+                                dlg.Destroy()
                     else:
-                        dlg = wx.MessageDialog(self, u"请检查输入内容", u"输入内容不能为空", wx.OK | wx.ICON_ERROR)
+                        dlg = wx.MessageDialog(self, u"请检查ADB Keyboard", u"ADB Keyboard未安装或未启用", wx.OK | wx.ICON_ERROR)
                         if dlg.ShowModal() == wx.ID_OK:
                             dlg.Destroy()
             else:
@@ -643,12 +648,13 @@ class TopPanel(wx.Panel):
         eY = self.swipeEndY.GetValue()
 
         if operationString == "输入":
-            if inputC == "":
+            if not inputC:
                 dlg = wx.MessageDialog(self, u"请检查输入内容", u"输入内容不能为空", wx.OK | wx.ICON_ERROR)
                 if dlg.ShowModal() == wx.ID_OK:
                     dlg.Destroy()
             else:
                 keyb = self.keyboardType.GetValue()
+
                 wx.CallAfter(pub.sendMessage, "DoSwipeOrInput", msg=inputC + "\n" + keyb)
         else:
             if not sX or not sY or not eX or not eY:
