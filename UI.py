@@ -39,14 +39,13 @@ class GetNewScreenShotAndDomFileThread(Thread):
         p = subprocess.Popen("adb devices", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out = p.communicate(timeout=10)[0].decode()
         device_status = check_device(out)
-
-        p = subprocess.Popen("adb shell dumpsys window displays |head -n 3", shell=True, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        out = p.communicate(timeout=10)[0].decode()
-        display_info = get_android_display_info(out)
-        wx.CallAfter(pub.sendMessage, "update", msg=u"当前安卓设备分辨率: %dx%d" % (display_info[0], display_info[1]))
-        print("当前安卓设备分辨率: %dx%d" % (display_info[0], display_info[1]))
         if device_status:
+            p = subprocess.Popen("adb shell dumpsys window displays |head -n 3", shell=True, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+            out = p.communicate(timeout=10)[0].decode()
+            display_info = get_android_display_info(out)
+            wx.CallAfter(pub.sendMessage, "update", msg=u"当前安卓设备分辨率: %dx%d" % (display_info[0], display_info[1]))
+            print("当前安卓设备分辨率: %dx%d" % (display_info[0], display_info[1]))
             msg = "获取设备信息成功"
             wx.CallAfter(pub.sendMessage, "update", msg=msg)
             # 获取页面截图文件
@@ -134,8 +133,6 @@ class BottomLeftPanel(scrolled.ScrolledPanel):
     def __init__(self, parent):
         self.notUseDetaul = None
         wx.Panel.__init__(self, parent=parent)
-        # B = wx.StaticBox(self, -1)
-        # BSizer = wx.StaticBoxSizer(B, wx.VERTICAL)
         BSizer = wx.BoxSizer(wx.VERTICAL)
         self.imagesDir = os.path.join(".", "images")
         self.screenShotDir = os.path.join(".", "screenShot")
@@ -363,7 +360,7 @@ class BottomLeftPanel(scrolled.ScrolledPanel):
 
 class BottomRightTopPanel(scrolled.ScrolledPanel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent=parent)
+        scrolled.ScrolledPanel.__init__(self, parent=parent)
 
         B = wx.StaticBox(self, -1)
         self.BSizer = wx.StaticBoxSizer(B, wx.VERTICAL)
@@ -380,6 +377,7 @@ class BottomRightTopPanel(scrolled.ScrolledPanel):
         pub.subscribe(self.update_tree, "updateTree")
         pub.subscribe(self.set_selected_node, "setSelectedNode")
         pub.subscribe(self.do_search, "DoSearch")
+        self.SetupScrolling()
 
     def do_search(self, msg):
         if msg != "":
@@ -490,7 +488,7 @@ class BottomRightTopPanel(scrolled.ScrolledPanel):
 class BottomRightBottomPanel(scrolled.ScrolledPanel):
     def __init__(self, parent):
         """Constructor"""
-        wx.Panel.__init__(self, parent=parent)
+        scrolled.ScrolledPanel.__init__(self, parent=parent)
         self.gd = GD.Grid(self)
         self.gd.CreateGrid(20, 2)
         self.gd.SetRowLabelSize(0)
@@ -504,6 +502,7 @@ class BottomRightBottomPanel(scrolled.ScrolledPanel):
         pub.subscribe(self.update_node_detail, "updateNodeDetail")
         pub.subscribe(self.update_xpath, "updateXPath")
         self.Bind(wx.EVT_SIZE, self.resize_grid)
+        self.SetupScrolling()
 
     def update_xpath(self, msg):
         self.gd.SetCellValue(19, 0, "fullXPath")
@@ -676,8 +675,8 @@ class TopPanel(wx.Panel):
     def update_screen_shot(self, evt):
         bottom_left_panel_size = self.Parent.Parent.bottom_left_panel.GetSize()
         bottom_left_panel_status_bar_size = self.Parent.Parent.bottom_left_panel.statusBar.GetSize()
-        current_fit_size = bottom_left_panel_size[0] - 20, bottom_left_panel_size[1] - \
-                           bottom_left_panel_status_bar_size[1] - 20
+        current_fit_size = bottom_left_panel_size[0] - 20, \
+            bottom_left_panel_size[1] - bottom_left_panel_status_bar_size[1] - 20
         GetNewScreenShotAndDomFileThread(current_fit_size)
 
     def update_record_model(self, evt):
