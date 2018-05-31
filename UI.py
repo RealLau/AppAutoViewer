@@ -248,7 +248,7 @@ class BottomLeftPanel(scrolled.ScrolledPanel):
                             if dlg.ShowModal() == wx.ID_OK:
                                 dlg.Destroy()
                     else:
-                        dlg = wx.MessageDialog(self, u"请检查ADB Keyboard", u"ADB Keyboard未安装或未启用", wx.OK | wx.ICON_ERROR)
+                        dlg = wx.MessageDialog(self, u"请检查ADB Keyboard", u"ADB Keyboard未安装或未启用: https://github.com/senzhk/ADBKeyBoard/blob/758dab32cb220ffbf4bd1a2a58338c8948c86a63/bin/ADBKeyBoard.apk", wx.OK | wx.ICON_ERROR)
                         if dlg.ShowModal() == wx.ID_OK:
                             dlg.Destroy()
             else:
