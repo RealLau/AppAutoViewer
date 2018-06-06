@@ -37,7 +37,10 @@ class GetNewScreenShotAndDomFileThread(Thread):
         wx.CallAfter(pub.sendMessage, "update", msg=u"获取设备信息中……")
         # 获取设备信息
         p = subprocess.Popen("adb devices", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        o = subprocess.getstatusoutput("adb devices")
+        print(o)
         out = p.communicate(timeout=10)[0].decode()
+        print(out)
         device_status = check_device(out)
         if device_status:
             p = subprocess.Popen("adb shell dumpsys window displays |head -n 3", shell=True, stdout=subprocess.PIPE,
