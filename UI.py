@@ -12,7 +12,7 @@ from collections import OrderedDict
 from wx.lib.intctrl import IntCtrl as IntC
 from PIL import Image
 from Helper.Common import *
-
+import re
 recordStatus = None
 recordTimeDelay = None
 nodeDetailData = None
@@ -90,41 +90,70 @@ class GetNewScreenShotAndDomFileThread(Thread):
                     thumbnail.save(thumbnail_screenshots_path, quality=95)
                     wx.CallAfter(pub.sendMessage, "update", msg=thumbnail_screenshots_path)
                     # 获取页面布局文件adb shell uiautomator dump /mnt/sdcard/window_dump.xml  获得手机当前界面的UI信息，生成window_dump.xml
-                    msg = "获取页面布局文件中……"
+                    msg = "删除设备原页面布局文件……"
                     print(msg)
                     wx.CallAfter(pub.sendMessage, "update", msg=msg)
-                    p = subprocess.Popen("adb shell uiautomator dump /sdcard/window_dump.xml", shell=True,
+                    subprocess.Popen("adb shell rm -rf /sdcard/window_dump.xml", shell=True,
                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    out = p.communicate(timeout=20)
-                    out_put = (out[0].decode() + out[1].decode()).replace("\r", "").replace("\n", "")
-                    if "error" in out_put or "ERROR" in out_put:
-                        msg = "获取页面布局文件失败: " + out_put + "动态页面不支持获取（建议：暂停播放后重试）"
+                    msg = "检查设备原页面布局文件是否删除成功……"
+                    print(msg)
+                    wx.CallAfter(pub.sendMessage, "update", msg=msg)
+                    p = subprocess.Popen("adb shell ls /sdcard/", shell=True,
+                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    out = p.communicate(timeout=20)[0].decode()
+                    if "window_dump.xml" in out:
+                        msg = "删除设备原页面布局文件失败"
                         print(msg)
                         wx.CallAfter(pub.sendMessage, "update", msg=msg)
                     else:
-                        msg = "获取页面布局文件成功"
+                        msg = "检查uiautomator进程是否正在使用或残留..."
                         print(msg)
                         wx.CallAfter(pub.sendMessage, "update", msg=msg)
-                        # 上传页面布局文件至PC：当前目录的Hierarchy下
-                        print("上传页面布局文件至PC……")
-                        wx.CallAfter(pub.sendMessage, "update", msg="上传页面布局文件至PC……")
-                        xmlHierarchyPath = os.path.join(cDir, "Hierarchy", "window_dump.xml")
-                        p = subprocess.Popen("adb pull /sdcard/window_dump.xml %s" % xmlHierarchyPath, shell=True,
+                        p = subprocess.Popen("adb shell ps | grep uiautomator", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        out = p.communicate(timeout=20)[0].decode()
+                        # 如果有残留的UIautomator进程，则杀掉
+                        if out:
+                            p = re.compile(r" (\d+) ")
+                            uiautomator_pid = p.findall(out)[0]
+                            msg = "存在残余的uiautomator进程，现在将强行杀掉..."
+                            print(msg)
+                            wx.CallAfter(pub.sendMessage, "update", msg=msg)
+                            subprocess.Popen("adb shell kill -9 %s" % uiautomator_pid, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        msg = "获取页面布局文件中……"
+                        print(msg)
+                        wx.CallAfter(pub.sendMessage, "update", msg=msg)
+                        p = subprocess.Popen("adb shell uiautomator dump /sdcard/window_dump.xml", shell=True,
                                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         out = p.communicate(timeout=20)
                         out_put = (out[0].decode() + out[1].decode()).replace("\r", "").replace("\n", "")
-                        if "error" in out_put:
-                            msg = "上传页面布局文件至PC失败: " + out_put
+                        if "error" in out_put or "ERROR" in out_put:
+                            msg = "获取页面布局文件失败: " + out_put + "动态页面不支持获取（建议：暂停播放后重试）"
                             print(msg)
                             wx.CallAfter(pub.sendMessage, "update", msg=msg)
-                            return
                         else:
-                            msg = "上传页面布局文件至PC成功"
-                            wx.CallAfter(pub.sendMessage, "update", msg=msg)
-                            wx.CallAfter(pub.sendMessage, "update", msg=xmlHierarchyPath)
-                            wx.CallAfter(pub.sendMessage, "updateTree")
+                            msg = "获取页面布局文件成功"
                             print(msg)
-                            wx.CallAfter(pub.sendMessage, "updateNodeDetail")
+                            wx.CallAfter(pub.sendMessage, "update", msg=msg)
+                            # 上传页面布局文件至PC：当前目录的Hierarchy下
+                            print("上传页面布局文件至PC……")
+                            wx.CallAfter(pub.sendMessage, "update", msg="上传页面布局文件至PC……")
+                            xmlHierarchyPath = os.path.join(cDir, "Hierarchy", "window_dump.xml")
+                            p = subprocess.Popen("adb pull /sdcard/window_dump.xml %s" % xmlHierarchyPath, shell=True,
+                                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            out = p.communicate(timeout=20)
+                            out_put = (out[0].decode() + out[1].decode()).replace("\r", "").replace("\n", "")
+                            if "error" in out_put:
+                                msg = "上传页面布局文件至PC失败: " + out_put
+                                print(msg)
+                                wx.CallAfter(pub.sendMessage, "update", msg=msg)
+                                return
+                            else:
+                                msg = "上传页面布局文件至PC成功"
+                                wx.CallAfter(pub.sendMessage, "update", msg=msg)
+                                wx.CallAfter(pub.sendMessage, "update", msg=xmlHierarchyPath)
+                                wx.CallAfter(pub.sendMessage, "updateTree")
+                                print(msg)
+                                wx.CallAfter(pub.sendMessage, "updateNodeDetail")
         else:
             msg = "获取设备信息失败: 请确认安卓设备与PC连接良好后重试"
             wx.CallAfter(pub.sendMessage, "update", msg=msg)
